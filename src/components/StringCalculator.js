@@ -1,104 +1,46 @@
 class StringCalculator {
 
-
+    // public
     add(input) {
-        const add = function (list) {
-            return list.reduce((a, b) => Number(a) + Number(b))
-        }
-        return this.handleCalculation(input, add)
+        return this._handleCalculation(input, this._addAction)
     }
 
-    handleCalculation(input, calcuation) {
+    // private
+    _addAction(list) {
+        return list.reduce((a, b) => Number(a) + Number(b))
+    }
+
+    _handleCalculation(input, calcuation) {
         try {
-            this.handleExceptions(input)
-            const list = this.convertInputToList(input);
-            const result = calcuation(list);
-            return result.toString();
+            let list = new Input().getList(input);
+            return calcuation(list).toString();
         }
         catch (error) {
             return error;
         }
     }
-    handleExceptions(input) {
-        let errorMessage = ""
-        const [inputNumbersStr, customSeparator] = this.removeCustomSeparator(input);
-        const exceptions = [checkEmptyString, checkCommaAtEOF, checkCustomSeparatorErrors, checkForNegatives]
 
-        exceptions.forEach(exception => {
-            exception();
-        });
+}
 
-        if (errorMessage)
-            throw errorMessage;
+class Input
+{
+    exceptionHandler
 
-        /* #region Exception Functions */
-        function checkEmptyString() {
-            if (inputNumbersStr === "")
-                throw "0"
-        }
-
-        function checkCommaAtEOF() {
-            if (inputNumbersStr[inputNumbersStr.length - 1] === ",")
-                throw "Number expected but EOF found"
-        }
-
-        function checkCustomSeparatorErrors() {
-            if (customSeparator) {
-                if (inputNumbersStr.includes(','))
-                    throw `'${customSeparator}' expected but ',' found at position ${inputNumbersStr.indexOf(',')}`
-                if (isCustomSeparatorAtEOF())
-                    throw "Number expected but EOF found"
-            }
-
-            function isCustomSeparatorAtEOF() {
-                if (inputNumbersStr.indexOf(customSeparator, inputNumbersStr.length - customSeparator.length) === -1)
-                    return false
-                else
-                    return true
-            }
-        }
-
-        function checkForNegatives() {
-            const hasNegative = function () {
-                return inputNumbersStr.includes("-")
-            }
-
-            if (hasNegative()) {
-                let message = "Negative not allowed : -"
-                let nextNegativeIndex = 0
-                function hasMoreNegatives() {
-                    if (inputNumbersStr.indexOf("-", nextNegativeIndex) !== -1)
-                        return true
-
-                    else
-                        return false
-                }
-
-                function getNextNegative() {
-                    nextNegativeIndex = inputNumbersStr.indexOf("-", nextNegativeIndex) + 1
-                    const number = inputNumbersStr[nextNegativeIndex]
-                    return number
-                }
-
-                let number = getNextNegative()
-
-                message += number
-                while (hasMoreNegatives()) {
-                    message += ", -"
-                    number = getNextNegative()
-                    message += number
-                }
-                throw message
-            }
-        }
-        /* #endregion */
+    constructor()
+    {
+        this.exceptionHandler = new ExceptionHandler();
     }
-    convertInputToList(input) {
-        const [inputNumbersStr, customSeparator] = this.removeCustomSeparator(input)
-        const list = this.splitString(inputNumbersStr, customSeparator);
+
+    // public
+    getList(input) {
+        const [inputNumbersStr, customSeparator] = this._getCustomSeparatorAndListStr(input)
+        this.exceptionHandler.handle(inputNumbersStr, customSeparator)
+        const list = this._splitString(inputNumbersStr, customSeparator);
         return list
     }
-    splitString(input, customSeparator) {
+
+    // private
+    _splitString(input, customSeparator) {
         let result;
 
         if (customSeparator) {
@@ -131,7 +73,7 @@ class StringCalculator {
         }
         /* #endregion */
     }
-    removeCustomSeparator(input) {
+    _getCustomSeparatorAndListStr(input) {
         let customSeparator = null;
         let inputNumbersStr = input
 
@@ -141,6 +83,90 @@ class StringCalculator {
         }
 
         return [inputNumbersStr, customSeparator]
+    }
+}
+
+class ExceptionHandler
+{
+    inputNumbersStr = ""
+    customSeparator = ""
+    errorMessage = ""
+
+    // public
+    handle(inputNumbersStr, customSeparator) {
+        this.inputNumbersStr = inputNumbersStr;
+        this.customSeparator = customSeparator;
+
+        let errorMessage = ""
+        const exceptions = [this._checkEmptyString, this._checkCommaAtEOF, this._checkCustomSeparatorErrors, this._checkForNegatives]
+
+        exceptions.forEach(exception => {
+            exception(inputNumbersStr, customSeparator);
+        });
+
+        if (errorMessage)
+            throw errorMessage;
+    }
+
+    // private
+    _checkEmptyString(inputNumbersStr, customSeparator) {
+        if (inputNumbersStr === "")
+            throw "0"
+    }
+    
+    _checkCommaAtEOF(inputNumbersStr, customSeparator) {
+        if (inputNumbersStr[inputNumbersStr.length - 1] === ",")
+            throw "Number expected but EOF found"
+    }
+    
+    _checkCustomSeparatorErrors(inputNumbersStr, customSeparator) {
+        if (customSeparator) {
+            if (inputNumbersStr.includes(','))
+                throw `'${customSeparator}' expected but ',' found at position ${inputNumbersStr.indexOf(',')}`
+            if (isCustomSeparatorAtEOF())
+                throw "Number expected but EOF found"
+        }
+    
+        function isCustomSeparatorAtEOF() {
+            if (inputNumbersStr.indexOf(customSeparator, inputNumbersStr.length - customSeparator.length) === -1)
+                return false
+            else
+                return true
+        }
+    }
+    
+    _checkForNegatives(inputNumbersStr, customSeparator) {
+        const hasNegative = function () {
+            return inputNumbersStr.includes("-")
+        }
+    
+        if (hasNegative()) {
+            let message = "Negative not allowed : -"
+            let nextNegativeIndex = 0
+            function hasMoreNegatives() {
+                if (inputNumbersStr.indexOf("-", nextNegativeIndex) !== -1)
+                    return true
+    
+                else
+                    return false
+            }
+    
+            function getNextNegative() {
+                nextNegativeIndex = inputNumbersStr.indexOf("-", nextNegativeIndex) + 1
+                const number = inputNumbersStr[nextNegativeIndex]
+                return number
+            }
+    
+            let number = getNextNegative()
+    
+            message += number
+            while (hasMoreNegatives()) {
+                message += ", -"
+                number = getNextNegative()
+                message += number
+            }
+            throw message
+        }
     }
 }
 
